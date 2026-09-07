@@ -319,7 +319,14 @@ function parseArray({
       schemaItems = Array(schema.maxItems).fill(irItemsSchema);
     } else {
       const ofArray = schema.items.allOf || schema.items.anyOf || schema.items.oneOf;
-      if (ofArray && ofArray.length > 1 && !getSchemaTypes(schema.items).includes('null')) {
+      if (
+        ofArray &&
+        ofArray.length > 1 &&
+        !getSchemaTypes(schema.items).includes('null') &&
+        // a `$ref` sibling of the composition parses to a reference, not to a
+        // composition; assigning it over `irSchema` would drop the array itself
+        !irItemsSchema.$ref
+      ) {
         // bring composition up to avoid incorrectly nested arrays
         Object.assign(irSchema, irItemsSchema);
       } else {

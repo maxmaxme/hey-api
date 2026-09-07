@@ -38,6 +38,41 @@ function createContext(spec: OpenAPIV3_1.Document) {
 }
 
 describe('parseV3_1_X', () => {
+  it('keeps the array when items carry a $ref beside a composition', () => {
+    const spec: OpenAPIV3_1.Document = {
+      components: {
+        schemas: {
+          Base: { properties: { op: { type: 'string' } }, type: 'object' },
+          Composite: { properties: { kind: { type: 'string' } }, type: 'object' },
+          Field: { properties: { op: { type: 'string' } }, type: 'object' },
+          Holder: {
+            properties: {
+              filters: {
+                items: {
+                  $ref: '#/components/schemas/Base',
+                  oneOf: [
+                    { $ref: '#/components/schemas/Field' },
+                    { $ref: '#/components/schemas/Composite' },
+                  ],
+                },
+                type: 'array',
+              },
+            },
+            type: 'object',
+          },
+        },
+      },
+      info: { title: 'Test', version: '1' },
+      openapi: '3.1.0',
+    };
+    const context = createContext(spec);
+    parseV3_1_X(context);
+    expect(context.ir.components?.schemas?.Holder?.properties?.filters).toEqual({
+      items: [{ $ref: '#/components/schemas/Base' }],
+      type: 'array',
+    });
+  });
+
   it('encodes $ref for schema name containing /', () => {
     const spec: OpenAPIV3_1.Document = {
       components: {
